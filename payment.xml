@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This file is part account_payment_gateway_paypal of Tryton. The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<tryton>
+    <data>
+        <record model="ir.ui.view" id="account_payment_view_form">
+            <field name="model">account.payment.journal</field>
+            <field name="inherit" ref="account_payment.payment_journal_view_form"/>
+            <field name="name">payment_journal_form</field>
+        </record>
+        <record model="ir.ui.view" id="paypal_account_view_form">
+            <field name="model">account.payment.paypal.account</field>
+            <field name="type">form</field>
+            <field name="name">paypal_account_form</field>
+        </record>
+        <record model="ir.ui.view" id="paypal_account_view_tree">
+            <field name="model">account.payment.paypal.account</field>
+            <field name="type">tree</field>
+            <field name="name">paypal_account_tree</field>
+        </record>
+        <record model="ir.action.act_window" id="act_account_form">
+            <field name="name">Paypal Accounts</field>
+            <field name="res_model">account.payment.paypal.account</field>
+        </record>
+        <menuitem
+            parent="account_payment.menu_payment_configuration"
+            action="act_account_form"
+            sequence="40"
+            id="menu_account_form_paypal"
+            />
+    </data>
+</tryton>

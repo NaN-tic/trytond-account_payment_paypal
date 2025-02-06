@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!-- This file is part account_payment_gateway_paypal of Tryton. The COPYRIGHT file at the top level
+of
+this repository contains the full copyright notices and license terms. -->
+<form>
+    <label name="paypal_method" />
+    <field name="paypal_method" />
+    <newline/>
+    <label name="paypal_email" />
+    <field name="paypal_email" />
+    <newline/>
+    <label name="paypal_username" />
+    <field name="paypal_username" />
+    <newline/>
+    <label name="paypal_password" />
+    <field name="paypal_password" widget="password" />
+    <newline/>
+    <label name="paypal_signature" />
+    <field name="paypal_signature" />
+    <newline/>
+    <label name="paypal_client_id" />
+    <field name="paypal_client_id" />
+    <newline/>
+    <label name="paypal_client_secret" />
+    <field name="paypal_client_secret" widget="password" />
+    <newline />
+    <label name="paypal_mode"/>
+    <field name="paypal_mode"/>
+</form>
