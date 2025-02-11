@@ -3,6 +3,7 @@
 this repository contains the full copyright notices and license terms. -->
 <data>
     <xpath expr="/form/field[@name='process_method']" position="after">
+        <separator name="paypal_account" string="Paypal" colspan="4"/>
         <label name="paypal_account"/>
         <field name="paypal_account"/>
         <label name="paypal_url"/>
