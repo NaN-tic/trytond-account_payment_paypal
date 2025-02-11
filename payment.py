@@ -69,6 +69,10 @@ class AccountPaymentJournal(metaclass=PoolMeta):
             'required': Eval('process_method') == 'paypal',
             'invisible': Eval('process_method') != 'paypal',
         })
+    server_prefix = fields.Char('Server Prefix', states={
+            'required': Eval('process_method') == 'paypal',
+            'invisible': Eval('process_method') != 'paypal',
+        })
 
     @classmethod
     def __setup__(cls):
