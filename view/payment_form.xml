@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
+this repository contains the full copyright notices and license terms. -->
+<data>
+    <xpath expr="//field[@name='date']" position="after">
+        <group id="paypal" string="Paypal" colspan="4">
+            <label name="paypal_payment_id" string="UUID:"/>
+            <field name="paypal_payment_id" colspan="3"/>
+            <!-- <label name="redsys_gateway" string="Gateway:"/>
+            <field name="redsys_gateway" colspan="3"/>-->
+            <label name="paypal_payer_id" string="Authorisation Code:"/>
+            <field name="paypal_payer_id" colspan="3"/>
+            <!-- <label name="redsys_method" string="Method:"/>
+            <field name="redsys_method" colspan="3"/>-->
+        </group>
+    </xpath>
+</data>

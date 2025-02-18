@@ -3,8 +3,12 @@
 # the full copyright notices and license terms.
 import iso8601
 import logging
+import requests
+
+import json
 from datetime import datetime
 from decimal import Decimal
+from requests.auth import HTTPBasicAuth
 from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
 from trytond.transaction import Transaction
@@ -93,96 +97,83 @@ class PaymentGroup(metaclass=PoolMeta):
 class Payment(metaclass=PoolMeta):
     __name__ = 'account.payment'
 
-    @classmethod
-    def paypal_ipn(cls, payment_journal, merchant_parameters, signature):
-        pool = Pool()
-        Payment = pool.get('account.payment')
-        """
-        Signal Redsys confirmation payment
-
-        Redsys request form data:
-            - Ds_Date
-            - Ds_SecurePayment
-            - Ds_Card_Country
-            - Ds_AuthorisationCode
-            - Ds_MerchantCode
-            - Ds_Amount
-            - Ds_ConsumerLanguage
-            - Ds_Response
-            - Ds_Order
-            - Ds_TransactionType
-            - Ds_Terminal
-            - Ds_Signature
-            - Ds_Currency
-            - Ds_Hour
-        """
-        sandbox = False
-        if payment_journal.redsys_account.mode == 'sandbox':
-            sandbox = True
-
-        merchant_code = payment_journal.redsys_account.merchant_code
-        merchant_secret_key = payment_journal.redsys_account.secret_key
-
-        redsyspayment = None
-        redsyspayment = Client(business_code=merchant_code,
-            secret_key=merchant_secret_key, sandbox=sandbox)
-        valid_signature = redsyspayment.redsys_check_response(
-            signature.encode('utf-8'), merchant_parameters.encode('utf-8'))
-        if not valid_signature:
-            #TODO: handle errors in voyager
-            return '500'
-
-        merchant_parameters = redsyspayment.decode_parameters(merchant_parameters)
-
-        reference = merchant_parameters.get('Ds_Order')
-        authorisation_code = merchant_parameters.get('Ds_AuthorisationCode')
-        amount = merchant_parameters.get('Ds_Amount', 0)
-        response = merchant_parameters.get('Ds_Response')
-
-        log = "\n".join([('%s: %s' % (k, v)) for k, v in
-            merchant_parameters.items()])
-
-        # Search payment
-        payments = Payment.search([
-            ('redsys_reference_gateway', '=', reference),
-            ('state', '=', 'draft'),
-            ], limit=1)
-        if payments:
-            payment, = payments
-            payment.redsys_authorisation_code = authorisation_code
-            payment.amount = Decimal(amount)/100
-            payment.redsys_gateway_log = log
-            payment.save()
-        else:
-            payment = Payment()
-            payment.description = reference
-            payment.redsys_authorisation_code = authorisation_code
-            payment.journal = payment_journal
-            payment.redsys_reference_gateway = reference
-            payment.amount = Decimal(amount)/100
-            payment.redsys_gateway_log = log
-            payment.save()
-
-        # Process transaction 0000 - 0099: Done
-        if int(response) < 100:
-            Payment.confirm([payment])
-            return response
-        Payment.cancel([payment])
-        return response
+    paypal_payment_id = fields.Char('Paypal Payment ID', states={
+            'required': Eval('process_method') == 'paypal',
+            'invisible': Eval('process_method') != 'paypal',
+        } )
 
     @classmethod
     def create_paypal_payment(cls, party, amount, currency, payment_journal,
-            paypal_account):
+            paypal_account, url_ok, url_ko):
+
+        response = paypal_account.get_paypal_access_token()
+        url = ''
+        if paypal_account.paypal_mode != 'sandbox':
+            url =  'https://api-m.paypal.com/v1/payments/payment'
+        else:
+            url =  'https://api-m.sandbox.paypal.com/v1/payments/payment'
+        headers = {
+        'Authorization': f'Bearer {response}'
+            }
+        payload = {
+        "intent": "sale",
+        "payer": {
+            "payment_method": "paypal"
+            },
+        "redirect_urls": {
+            "return_url": url_ok,
+            "cancel_url": url_ko
+            },
+        "transactions": [{
+            "amount": {
+                "total": str(amount),
+                "currency": currency.code
+            },
+            }]
+        }
+        payment_response = requests.post(url, headers=headers, json=payload)
+        payment = payment_response.json()
+        payment_id = payment['id']
+
         pool = Pool()
         Payment = pool.get('account.payment')
-        sandbox = paypal_account.paypal_mode
 
-        payment = Payment()
-        payment.journal = payment_journal
-        payment.party = party
-        payment.currency = currency
-        payment.amount = amount
-        payment.save()
+        payment_tryton = Payment()
+        payment_tryton.journal = payment_journal
+        payment_tryton.party = party
+        payment_tryton.currency = currency
+        payment_tryton.amount = amount
+        payment_tryton.paypal_payment_id = payment_id
+        payment_tryton.save()
+
+        return payment
+
+    @classmethod
+    def check_payment_status(cls, paymentID, paypal_account):
+        Payment = Pool().get('account.payment')
+        response = paypal_account.get_paypal_access_token()
+        url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}/execute'
+        headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {response}'
+            }
+        payload = {
+            'payment_id': paymentID
+        }
+        response = requests.post(url, headers=headers, data=payload)
+        payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
+        if payment:
+            payment, = payment
+        else:
+            return False
+
+        if response.status_code == 200:
+            if response.json()['state'] == 'APPROVED':
+                return True
+        else:
+            return False
+
+
 
 class Account(ModelSQL, ModelView):
     'Paypal Account'
@@ -217,3 +208,21 @@ class Account(ModelSQL, ModelView):
         }, help='Paypal Rest APP Client Secret')
     paypal_mode = fields.Selection([('sandbox', 'Sandbox'), ('live', 'Live')],
         'Account Mode', states={'required': True})
+
+    def get_paypal_access_token(self):
+        url = ''
+        if self.paypal_mode == 'sandbox':
+            url =  'https://api-m.sandbox.paypal.com/v1/oauth2/token'
+        else:
+            url =  'https://api-m.paypal.com/v1/oauth2/token'
+        client_id = self.paypal_client_id
+        secret = self.paypal_client_secret
+        headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json'
+            }
+        data = {
+                'grant_type': 'client_credentials'
+            }
+        response = requests.post(url, headers=headers, data=data, auth=HTTPBasicAuth(client_id, secret))
+        return response.json()['access_token']
