@@ -108,10 +108,11 @@ class Payment(metaclass=PoolMeta):
 
         response = paypal_account.get_paypal_access_token()
         url = ''
-        if paypal_account.paypal_mode != 'sandbox':
-            url =  'https://api-m.paypal.com/v1/payments/payment'
-        else:
+        if paypal_account.paypal_mode == 'sandbox':
             url =  'https://api-m.sandbox.paypal.com/v1/payments/payment'
+        else:
+            url =  'https://api-m.paypal.com/v1/payments/payment'
+
         headers = {
         'Authorization': f'Bearer {response}'
             }
