@@ -179,7 +179,7 @@ class Payment(metaclass=PoolMeta):
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {response}'
             }
-        data = {'payer_id': payer_id}
+        data = '{"payer_id": "' + str(payer_id) + '"}'
         response = requests.post(url, headers=headers, data=data)
         if response.status_code == 200:
             payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
