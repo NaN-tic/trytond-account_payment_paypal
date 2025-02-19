@@ -150,29 +150,41 @@ class Payment(metaclass=PoolMeta):
         return payment
 
     @classmethod
-    def check_payment_status(cls, paymentID, paypal_account):
-        Payment = Pool().get('account.payment')
+    def get_payment_status(cls, paymentID, paypal_account):
         response = paypal_account.get_paypal_access_token()
-        url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}'
+        url = ''
+        if paypal_account.paypal_mode == 'sandbox':
+            url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}'
+        else:
+            url = f'https://api-m.paypal.com/v1/payments/payment/{paymentID}'
         headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {response}'
             }
-        response = requests.post(url, headers=headers)
-        payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
-        if payment:
-            payment = payment[0]
-        else:
-            return False
+        response = requests.get(url, headers=headers)
+        return response.json()
 
+    @classmethod
+    def execute_paypal_payment(cls, paymentID, paypal_account):
+        Payment = Pool().get('account.payment')
+        response = paypal_account.get_paypal_access_token()
+        payment_status = Payment.get_payment_status(paymentID, paypal_account)
+        payer_id = payment_status['payer']['payer_id']
+        url = ''
+        if paypal_account.paypal_mode == 'sandbox':
+            url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}/execute'
+        else:
+            url = f'https://api-m.paypal.com/v1/payments/payment/{paymentID}/execute'
+        headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {response}'
+            }
+        data = {'payer_id': payer_id}
+        response = requests.post(url, headers=headers, data=data)
         if response.status_code == 200:
-            if response.json()['state'] == 'APPROVED':
-                Payment.submit([payment])
-                return True
-        else:
-            return False
-
-
+            payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
+            if payment:
+                Payment.submit(payment)
 
 class Account(ModelSQL, ModelView):
     'Paypal Account'
