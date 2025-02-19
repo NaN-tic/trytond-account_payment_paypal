@@ -169,7 +169,7 @@ class Payment(metaclass=PoolMeta):
         Payment = Pool().get('account.payment')
         response = paypal_account.get_paypal_access_token()
         payment_status = Payment.get_payment_status(paymentID, paypal_account)
-        payer_id = payment_status['payer']['payer_id']
+        payer_id = payment_status['payer']['payer_info']['payer_id']
         url = ''
         if paypal_account.paypal_mode == 'sandbox':
             url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}/execute'
