@@ -153,18 +153,15 @@ class Payment(metaclass=PoolMeta):
     def check_payment_status(cls, paymentID, paypal_account):
         Payment = Pool().get('account.payment')
         response = paypal_account.get_paypal_access_token()
-        url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}/execute'
+        url = f'https://api-m.sandbox.paypal.com/v1/payments/payment/{paymentID}'
         headers = {
         'Content-Type': 'application/json',
         'Authorization': f'Bearer {response}'
             }
-        payload = {
-            'payment_id': paymentID
-        }
-        response = requests.post(url, headers=headers, data=payload)
+        response = requests.post(url, headers=headers)
         payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
         if payment:
-            payment, = payment
+            payment = payment[0]
         else:
             return False
 
