@@ -145,6 +145,7 @@ class Payment(metaclass=PoolMeta):
         payment_tryton.currency = currency
         payment_tryton.amount = amount
         payment_tryton.paypal_payment_id = payment_id
+        payment_tryton.kind = 'receivable'
         payment_tryton.save()
 
         return payment
