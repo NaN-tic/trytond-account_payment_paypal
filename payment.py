@@ -170,6 +170,7 @@ class Payment(metaclass=PoolMeta):
 
         if response.status_code == 200:
             if response.json()['state'] == 'APPROVED':
+                Payment.submit([payment])
                 return True
         else:
             return False
