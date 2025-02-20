@@ -16,48 +16,6 @@ from trytond.pyson import Eval, Equal
 from trytond.modules.account_payment_gateway.tools import unaccent
 from trytond.model import (ModelSQL, ModelView, fields)
 
-PAYPAL_METHODS = []
-try:
-    import paypalrestsdk
-    PAYPAL_METHODS.append(('restsdk', 'REST SDK'))
-except ImportError:
-    pass
-try:
-    from paypal import PayPalInterface
-    PAYPAL_METHODS.append(('soap', 'SOAP (Classic)'))
-except ImportError:
-    pass
-
-logger = logging.getLogger(__name__)
-
-_PAYPAL_STATE = {
-    'created': 'draft',
-    'approved': 'authorized',
-    'failed': 'cancelled',
-    'pending': 'draft',
-    'canceled': 'cancelled',
-    'expired': 'cancelled',
-    'in_progress': 'authorized',
-    'Pending': 'draft',
-    'Processing': 'authorized',
-    'Success': 'authorized',
-    'Denied': 'cancelled',
-    'Reversed': 'cancelled',
-    'Completed': 'authorized',
-    }
-_PAYPAL_KEYS = (
-    'L_TRANSACTIONID',
-    'L_STATUS',
-    'L_NAME',
-    'L_TIMEZONE',
-    'L_TIMESTAMP',
-    'L_CURRENCYCODE',
-    'L_TYPE',
-    'L_EMAIL',
-    'L_AMT',
-    'L_NETAMT',
-    )
-
 
 class AccountPaymentJournal(metaclass=PoolMeta):
     __name__ = 'account.payment.journal'
@@ -191,23 +149,7 @@ class Account(ModelSQL, ModelView):
     'Paypal Account'
     __name__ = 'account.payment.paypal.account'
 
-    paypal_method = fields.Selection(PAYPAL_METHODS, 'Paypal Methods',
-        help='Select a API Paypal method to connect.')
     paypal_email = fields.Char('Email', help='Paypal Email Account')
-    paypal_username = fields.Char('Username',
-        states={
-            'invisible': (~(Equal(Eval('paypal_method'), 'soap'))),
-            'required': (Equal(Eval('paypal_method'), 'soap')),
-        }, help='Paypal Username Soap API')
-    paypal_password = fields.Char('Password', strip=False,
-        states={'invisible': ~(Equal(Eval('paypal_method'), 'soap')),
-            'required': (Equal(Eval('paypal_method'), 'soap')),
-        }, help='Paypal Password Soap API')
-    paypal_signature = fields.Char('Signature',
-        states={
-            'invisible': (~(Equal(Eval('paypal_method'), 'soap'))),
-            'required': ((Equal(Eval('paypal_method'), 'soap'))),
-        }, help='Paypal Signature Soap API')
     paypal_client_id = fields.Char('Client ID',
         states={
             'invisible': (~(Equal(Eval('paypal_method'), 'restsdk'))),
