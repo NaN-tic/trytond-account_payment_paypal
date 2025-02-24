@@ -4,7 +4,6 @@
 import iso8601
 import logging
 import requests
-
 import json
 from datetime import datetime
 from decimal import Decimal
@@ -59,11 +58,11 @@ class Payment(metaclass=PoolMeta):
             'required': Eval('process_method') == 'paypal',
             'invisible': Eval('process_method') != 'paypal',
         } )
+    secret_identifier = fields.Char('Temporary Secret Identifier')
 
     @classmethod
     def create_paypal_payment(cls, party, amount, currency, payment_journal,
-            paypal_account, url_ok, url_ko):
-
+            paypal_account, url_ok, url_ko, secret_identifier = None):
         response = paypal_account.get_paypal_access_token()
         url = ''
         if paypal_account.paypal_mode == 'sandbox':
@@ -104,6 +103,8 @@ class Payment(metaclass=PoolMeta):
         payment_tryton.amount = amount
         payment_tryton.paypal_payment_id = payment_id
         payment_tryton.kind = 'receivable'
+        if secret_identifier:
+            payment_tryton.secret_identifier = secret_identifier
         payment_tryton.save()
 
         return payment
@@ -144,6 +145,8 @@ class Payment(metaclass=PoolMeta):
             payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
             if payment:
                 Payment.submit(payment)
+                payment.secret_identifier = ''
+                payment.save()
             else:
                 return False
         else:
