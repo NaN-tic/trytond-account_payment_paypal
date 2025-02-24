@@ -104,6 +104,7 @@ class Payment(metaclass=PoolMeta):
         payment_tryton.paypal_payment_id = payment_id
         payment_tryton.kind = 'receivable'
         if secret_identifier:
+            print(secret_identifier)
             payment_tryton.secret_identifier = secret_identifier
         payment_tryton.save()
 
@@ -145,8 +146,9 @@ class Payment(metaclass=PoolMeta):
             payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
             if payment:
                 Payment.submit(payment)
-                payment.secret_identifier = ''
-                payment.save()
+                for single_payment in payment:
+                    single_payment.secret_identifier = ''
+                    payment.save()
             else:
                 return False
         else:
