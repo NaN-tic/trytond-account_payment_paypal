@@ -144,6 +144,10 @@ class Payment(metaclass=PoolMeta):
             payment = Payment.search([('paypal_payment_id', '=', paymentID)], limit=1)
             if payment:
                 Payment.submit(payment)
+            else:
+                return False
+        else:
+            return False
 
 class Account(ModelSQL, ModelView):
     'Paypal Account'
