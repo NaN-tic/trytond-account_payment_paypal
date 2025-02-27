@@ -1,18 +1,10 @@
 # This file is part account_payment_gateway_paypal module for Tryton.
 # The COPYRIGHT file at the top level of this repository contains
 # the full copyright notices and license terms.
-import iso8601
-import logging
 import requests
-import json
-from datetime import datetime
-from decimal import Decimal
 from requests.auth import HTTPBasicAuth
-from trytond.model import fields
 from trytond.pool import Pool, PoolMeta
-from trytond.transaction import Transaction
 from trytond.pyson import Eval, Equal
-from trytond.modules.account_payment_gateway.tools import unaccent
 from trytond.model import (ModelSQL, ModelView, fields)
 
 
