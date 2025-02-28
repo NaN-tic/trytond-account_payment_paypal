@@ -152,14 +152,11 @@ class Account(ModelSQL, ModelView):
 
     paypal_email = fields.Char('Email', help='Paypal Email Account')
     paypal_client_id = fields.Char('Client ID',
-        states={
-            'invisible': (~(Equal(Eval('paypal_method'), 'restsdk'))),
-            'required': ((Equal(Eval('paypal_method'), 'restsdk'))),
+        states={ 'required': True
         }, help='Paypal Rest APP Client ID')
     paypal_client_secret = fields.Char('Client Secret',
         states={
-            'invisible': (~(Equal(Eval('paypal_method'), 'restsdk'))),
-            'required': ((Equal(Eval('paypal_method'), 'restsdk'))),
+            'required': True
         }, help='Paypal Rest APP Client Secret')
     paypal_mode = fields.Selection([('sandbox', 'Sandbox'), ('live', 'Live')],
         'Account Mode', states={'required': True})
