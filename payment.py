@@ -4,7 +4,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from trytond.pool import Pool, PoolMeta
-from trytond.pyson import Eval, Equal
+from trytond.pyson import Eval
 from trytond.model import (ModelSQL, ModelView, fields)
 
 
