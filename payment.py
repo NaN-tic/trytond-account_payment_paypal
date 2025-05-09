@@ -141,6 +141,7 @@ class Payment(metaclass=PoolMeta):
                 for single_payment in payment:
                     single_payment.secret_identifier = ''
                 Payment.save(payment)
+                return True
             else:
                 return False
         else:
